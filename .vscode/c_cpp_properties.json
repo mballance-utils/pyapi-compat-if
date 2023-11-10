@@ -1,0 +1,38 @@
+{
+    "configurations": [
+        {
+            "name": "Default",
+            "includePath": [
+                "${default}",
+                "src",
+                "src/include",
+                "test",
+                "packages/debug-mgr/src/include",
+                "packages/gtest/googletest/include"
+            ],
+            "defines": [
+                "${default}"
+            ],
+            "macFrameworkPath": [
+                "${default}"
+            ],
+            "forcedInclude": [
+                "${default}",
+                "additional/paths"
+            ],
+            "compileCommands": "${default}",
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": "${default}",
+                "path": [
+                    "${default}"
+                ]
+            },
+            "intelliSenseMode": "${default}",
+            "cStandard": "${default}",
+            "cppStandard": "${default}",
+            "compilerPath": "${default}"
+        }
+    ],
+    "version": 4
+}
