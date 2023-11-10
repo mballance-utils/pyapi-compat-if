@@ -98,6 +98,11 @@ void TestBase::SetUp() {
 
 }
 
+void TestBase::TearDown() {
+    fprintf(stdout, "TearDown\n");
+    m_factory->reset();
+}
+
 void TestBase::enableDebug(bool en) {
     m_dmgr->enable(en);
 };

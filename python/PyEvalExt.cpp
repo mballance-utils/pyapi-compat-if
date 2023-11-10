@@ -33,6 +33,16 @@ PyEvalExt::~PyEvalExt() {
 
 }
 
+int PyEvalExt::finalize() {
+    PyObject *ext = PyImport_ImportModule("pyapi_compat_if");
+    PyObject *del = PyObject_GetAttrString(ext, "reset");
+    PyEval_CallFunction(del, "");
+
+    // For testing, at least, finalizing really isn't a good idea
+//    return Py_FinalizeEx();
+    return 0;
+}
+
 void PyEvalExt::INCREF(PyEvalObj *obj) {
     Py_INCREF(reinterpret_cast<PyObject *>(obj));
 }
@@ -41,7 +51,7 @@ void PyEvalExt::DECREF(PyEvalObj *obj) {
     Py_DECREF(reinterpret_cast<PyObject *>(obj));
 }
 
-PyEvalObj *PyEvalExt::ImportModule(const std::string &name) {
+PyEvalObj *PyEvalExt::importModule(const std::string &name) {
     return reinterpret_cast<PyEvalObj *>(PyImport_ImportModule(name.c_str()));
 }
 
@@ -55,6 +65,10 @@ bool PyEvalExt::hasAttr(PyEvalObj *obj, const std::string &name) {
     return PyObject_HasAttrString(
         reinterpret_cast<PyObject *>(obj),
         name.c_str());
+}
+
+bool PyEvalExt::isCallable(PyEvalObj *obj) {
+    return PyCallable_Check(reinterpret_cast<PyObject *>(obj));
 }
 
 }

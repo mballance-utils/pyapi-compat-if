@@ -51,7 +51,18 @@ Factory::~Factory() {
 void Factory::init(dmgr::IDebugMgr *dmgr) {
     m_dmgr = dmgr;
     DEBUG_INIT("pyapi::Factory", dmgr);
+}
 
+void Factory::reset() {
+    DEBUG_ENTER("reset");
+    if (m_pyeval) {
+        DEBUG("Finalizing");
+        // Drop the reference we've been holding to the extension
+        m_pyeval->DECREF(m_ext_ref);
+        m_pyeval->finalize();
+        m_pyeval.reset();
+    }
+    DEBUG_LEAVE("reset");
 }
 
 void Factory::setPyEval(IPyEval *eval) {
@@ -84,22 +95,33 @@ IPyEval *Factory::getPyEval(std::string &err) {
         DEBUG_ENTER("Call Py_Initialize");
         void *pyinit = dlsym(python_dll_lib, "Py_Initialize");
         void (*pyinit_f)() = (void (*)())pyinit;
+        void *(*pygetattr_f)(void *, const char *) = 
+            (void *(*)(void *, const char *))dlsym(python_dll_lib, "PyObject_GetAttrString");
+        void *(*pycall_f)(void *, const char *, ...) =
+            (void *(*)(void *, const char *, ...))dlsym(python_dll_lib, "PyEval_CallFunction");
         pyinit_f();
         DEBUG_LEAVE("Call Py_Initialize");
 
         DEBUG_ENTER("Import pyapi package");
         void *pyimport = dlsym(python_dll_lib, "PyImport_ImportModule");
         void *(*pyimport_f)(const char *) = (void *(*)(const char *))pyimport;
-        void *mod = pyimport_f("pyapi_compat_if");
-        fprintf(stdout, "mod=%p\n", mod);
+        m_ext_ref = reinterpret_cast<PyEvalObj *>(pyimport_f("pyapi_compat_if"));
         DEBUG_LEAVE("Import pyapi package");
 
+        void *init_o = pygetattr_f(m_ext_ref, "init");
+        DEBUG_ENTER("pycall_f %p", init_o);
+        pycall_f(init_o, "");
+        DEBUG_LEAVE("pycall_f %p", init_o);
+
         if (!m_pyeval) {
+            DEBUG("Python extension did not set the PyEval handle");
             err = "Python extension did not set the PyEval handle";
+        } else {
+//            m_pyeval->INCREF(m_ext_ref);
         }
     }
 
-    DEBUG_LEAVE("getPyEval");
+    DEBUG_LEAVE("getPyEval %p", m_pyeval.get());
     return m_pyeval.get();
 }
 

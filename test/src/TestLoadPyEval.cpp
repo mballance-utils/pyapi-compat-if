@@ -40,12 +40,29 @@ TEST_F(TestLoadPyEval, smoke) {
     IPyEval *eval = m_factory->getPyEval(err);
     ASSERT_TRUE(eval);
 
-    PyEvalObj *os_m = eval->ImportModule("os");
+    PyEvalObj *os_m = eval->importModule("os");
     ASSERT_TRUE(os_m);
+    eval->DECREF(os_m);
+
+    ASSERT_TRUE(eval->hasAttr(os_m, "environ"));
+
+    enableDebug(true);
+}
+
+TEST_F(TestLoadPyEval, smoke2) {
+    std::string err;
+
+    enableDebug(true);
+
+    IPyEval *eval = m_factory->getPyEval(err);
+    ASSERT_TRUE(eval);
+
+    PyEvalObj *os_m = eval->importModule("os");
+    ASSERT_TRUE(os_m);
+    eval->DECREF(os_m);
 
     ASSERT_TRUE(eval->hasAttr(os_m, "environ"));
 
 }
-
 
 }

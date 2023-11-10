@@ -34,9 +34,12 @@ public:
 
     virtual void init(dmgr::IDebugMgr *dmgr) = 0;
 
+    virtual void reset() = 0;
+
     virtual void setPyEval(IPyEval *eval) = 0;
 
     virtual IPyEval *getPyEval(std::string &err) = 0;
+
 
 };
 

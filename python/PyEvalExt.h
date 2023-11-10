@@ -32,15 +32,19 @@ public:
 
     virtual ~PyEvalExt();
 
+    virtual int finalize() override;
+
     virtual void INCREF(PyEvalObj *obj) override;
 
     virtual void DECREF(PyEvalObj *obj) override;
 
-    virtual PyEvalObj *ImportModule(const std::string &name) override;
+    virtual PyEvalObj *importModule(const std::string &name) override;
 
     virtual PyEvalObj *getAttr(PyEvalObj *obj, const std::string &name) override;
 
     virtual bool hasAttr(PyEvalObj *obj, const std::string &name) override;
+
+    virtual bool isCallable(PyEvalObj *obj) override;
 
 };
 

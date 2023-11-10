@@ -1,11 +1,17 @@
 
-
 print("__init__")
 
-try:
+
+def init():
+    print("init()")
     import pyapi_compat_if.core as core
     f = core.Factory.inst()
-except Exception as e:
-    print("Exception: %s" % str(e))
+
+def reset():
+    print("reset()")
+    import pyapi_compat_if.core as core
+    core.Factory.reset()
+
+
 
 

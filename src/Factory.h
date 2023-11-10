@@ -34,6 +34,8 @@ public:
 
     virtual void init(dmgr::IDebugMgr *dmgr) override;
 
+    virtual void reset() override;
+
     virtual void setPyEval(IPyEval *eval) override;
 
     virtual IPyEval *getPyEval(std::string &err) override;
@@ -55,6 +57,7 @@ private:
     static dmgr::IDebug                     *m_dbg;
     dmgr::IDebugMgr                         *m_dmgr;
     IPyEvalUP                               m_pyeval;
+    PyEvalObj                               *m_ext_ref;
 
 };
 

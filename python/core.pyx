@@ -9,6 +9,14 @@ cimport debug_mgr.core as dm
 cdef Factory _inst = None
 cdef class Factory(object):
 
+    def __del__(self):
+        print("Factory.__del__");
+
+    @staticmethod
+    def reset():
+        global _inst
+        _inst = None
+
     @staticmethod
     def inst():
         cdef Factory factory
@@ -38,3 +46,6 @@ cdef class Factory(object):
 
         return _inst
     pass
+
+def __del__():
+    print("core.pyx::__del__")

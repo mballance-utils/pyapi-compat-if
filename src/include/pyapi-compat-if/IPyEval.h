@@ -33,15 +33,19 @@ public:
 
     virtual ~IPyEval() { }
 
+    virtual int finalize() = 0;
+
     virtual void INCREF(PyEvalObj *obj) = 0;
 
     virtual void DECREF(PyEvalObj *obj) = 0;
 
-    virtual PyEvalObj *ImportModule(const std::string &name) = 0;
+    virtual PyEvalObj *importModule(const std::string &name) = 0;
 
     virtual PyEvalObj *getAttr(PyEvalObj *obj, const std::string &name) = 0;
 
     virtual bool hasAttr(PyEvalObj *obj, const std::string &name) = 0;
+
+    virtual bool isCallable(PyEvalObj *obj) = 0;
 
 };
 

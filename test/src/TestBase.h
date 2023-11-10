@@ -35,6 +35,8 @@ public:
 
     virtual void SetUp() override;
 
+    virtual void TearDown() override;
+
 protected:
     void enableDebug(bool en);
 
