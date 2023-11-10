@@ -19,6 +19,7 @@
  *     Author:
  */
 #include "PyEvalExt.h"
+#include "Python.h"
 
 
 namespace pyapi {
@@ -30,6 +31,30 @@ PyEvalExt::PyEvalExt(dmgr::IDebugMgr *dmgr) {
 
 PyEvalExt::~PyEvalExt() {
 
+}
+
+void PyEvalExt::INCREF(PyEvalObj *obj) {
+    Py_INCREF(reinterpret_cast<PyObject *>(obj));
+}
+
+void PyEvalExt::DECREF(PyEvalObj *obj) {
+    Py_DECREF(reinterpret_cast<PyObject *>(obj));
+}
+
+PyEvalObj *PyEvalExt::ImportModule(const std::string &name) {
+    return reinterpret_cast<PyEvalObj *>(PyImport_ImportModule(name.c_str()));
+}
+
+PyEvalObj *PyEvalExt::getAttr(PyEvalObj *obj, const std::string &name) {
+    return reinterpret_cast<PyEvalObj *>(PyObject_GetAttrString(
+        reinterpret_cast<PyObject *>(obj),
+        name.c_str()));
+}
+
+bool PyEvalExt::hasAttr(PyEvalObj *obj, const std::string &name) {
+    return PyObject_HasAttrString(
+        reinterpret_cast<PyObject *>(obj),
+        name.c_str());
 }
 
 }

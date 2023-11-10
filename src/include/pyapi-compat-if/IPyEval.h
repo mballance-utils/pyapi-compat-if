@@ -23,6 +23,8 @@
 
 namespace pyapi {
 
+// Opaque type used in place of PyObject
+struct PyEvalObj;
 
 class IPyEval;
 using IPyEvalUP=std::unique_ptr<IPyEval>;
@@ -30,6 +32,16 @@ class IPyEval {
 public:
 
     virtual ~IPyEval() { }
+
+    virtual void INCREF(PyEvalObj *obj) = 0;
+
+    virtual void DECREF(PyEvalObj *obj) = 0;
+
+    virtual PyEvalObj *ImportModule(const std::string &name) = 0;
+
+    virtual PyEvalObj *getAttr(PyEvalObj *obj, const std::string &name) = 0;
+
+    virtual bool hasAttr(PyEvalObj *obj, const std::string &name) = 0;
 
 };
 
