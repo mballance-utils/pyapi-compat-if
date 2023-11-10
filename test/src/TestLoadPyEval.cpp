@@ -33,6 +33,10 @@ TestLoadPyEval::~TestLoadPyEval() {
 }
 
 TEST_F(TestLoadPyEval, smoke) {
+    std::string err;
+
+    IPyEval *eval = m_factory->getPyEval(err);
+    ASSERT_TRUE(eval);
 
 }
 

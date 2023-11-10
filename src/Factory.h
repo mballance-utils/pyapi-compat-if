@@ -34,14 +34,27 @@ public:
 
     virtual void init(dmgr::IDebugMgr *dmgr) override;
 
+    virtual void setPyEval(IPyEval *eval) override;
+
     virtual IPyEval *getPyEval(std::string &err) override;
 
     static IFactory *inst();
 
 private:
+    bool find_python_lib(
+        void                **python_dll
+    );
+
+    bool get_python_info(
+        std::string         &python_dll,
+        std::string         &pythonpath,
+        std::string         &err);
+
+private:
     static std::unique_ptr<IFactory>        m_inst;
+    static dmgr::IDebug                     *m_dbg;
     dmgr::IDebugMgr                         *m_dmgr;
-    IPyEval                                 *m_pyeval;
+    IPyEvalUP                               m_pyeval;
 
 };
 

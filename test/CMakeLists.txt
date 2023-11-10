@@ -19,35 +19,35 @@ ExternalProject_Add(
     -DCMAKE_BUILD_TYPE:STRING=Release
   )
   
-ExternalProject_Get_Property(GTEST source_dir binary_dir)
+# ExternalProject_Get_Property(GTEST source_dir binary_dir)
 
-add_library(libgtest IMPORTED STATIC GLOBAL)
-add_dependencies(libgtest GTEST)
+# add_library(libgtest IMPORTED STATIC GLOBAL)
+# add_dependencies(libgtest GTEST)
 
-set_target_properties(libgtest PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/lib/libgtest.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-    )
+# set_target_properties(libgtest PROPERTIES
+#     "IMPORTED_LOCATION" "${binary_dir}/lib/libgtest.a"
+#     "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+#     )
 
-add_library(libgtest_main IMPORTED STATIC GLOBAL)
-add_dependencies(libgtest_main GTEST)
+# add_library(libgtest_main IMPORTED STATIC GLOBAL)
+# add_dependencies(libgtest_main GTEST)
 
-set_target_properties(libgtest_main PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/lib/libgtest_main.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-    )
+# set_target_properties(libgtest_main PROPERTIES
+#     "IMPORTED_LOCATION" "${binary_dir}/lib/libgtest_main.a"
+#     "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+#     )
 
-add_library(libgmock IMPORTED STATIC GLOBAL)
-add_dependencies(libgmock gtest)
+# add_library(libgmock IMPORTED STATIC GLOBAL)
+# add_dependencies(libgmock gtest)
 
-set_target_properties(libgmock PROPERTIES
-    "IMPORTED_LOCATION" "${binary_dir}/lib/libgmock.a"
-    "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
-    )
+# set_target_properties(libgmock PROPERTIES
+#     "IMPORTED_LOCATION" "${binary_dir}/lib/libgmock.a"
+#     "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+#     )
     
 include_directories(
-	"${source_dir}/googletest/include"
-	"${source_dir}/googlemock/include"
+	"${PACKAGES_DIR}/gtest/googletest/include"
+	"${PACKAGES_DIR}/gtest/googlemock/include"
     ${debug_mgr_INCDIR}
 	)
 
@@ -65,6 +65,8 @@ target_include_directories(test-pyapi-compat-if PUBLIC
 target_link_directories(test-pyapi-compat-if PRIVATE
     ${CMAKE_BINARY_DIR}/lib
     ${CMAKE_BINARY_DIR}/lib64
+    ${CMAKE_CURRENT_BINARY_DIR}/lib
+    ${CMAKE_CURRENT_BINARY_DIR}/lib64
     ${debug_mgr_LIBDIR}
     )
   
@@ -77,9 +79,11 @@ endif()
 target_link_libraries(test-pyapi-compat-if 
     pyapi-compat-if
     debug-mgr
-	libgtest_main
-	libgtest 
-	libgmock
+	gtest_main
+	gtest 
+	gmock
+    pthread
+    dl
 	)
 add_dependencies(test-pyapi-compat-if GTEST)
 #set_property(TARGET test_libvsc PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
