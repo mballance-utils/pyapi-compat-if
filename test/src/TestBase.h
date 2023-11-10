@@ -36,6 +36,9 @@ public:
     virtual void SetUp() override;
 
 protected:
+    void enableDebug(bool en);
+
+protected:
     dmgr::IDebugMgr         *m_dmgr;
     IFactory                *m_factory;
 

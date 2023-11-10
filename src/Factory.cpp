@@ -55,7 +55,9 @@ void Factory::init(dmgr::IDebugMgr *dmgr) {
 }
 
 void Factory::setPyEval(IPyEval *eval) {
+    DEBUG_ENTER("setPyEval");
     m_pyeval = IPyEvalUP(eval);
+    DEBUG_LEAVE("setPyEval");
 }
 
 IPyEval *Factory::getPyEval(std::string &err) {
@@ -79,14 +81,22 @@ IPyEval *Factory::getPyEval(std::string &err) {
             // Have the library
         }
 
+        DEBUG_ENTER("Call Py_Initialize");
         void *pyinit = dlsym(python_dll_lib, "Py_Initialize");
         void (*pyinit_f)() = (void (*)())pyinit;
         pyinit_f();
+        DEBUG_LEAVE("Call Py_Initialize");
 
+        DEBUG_ENTER("Import pyapi package");
         void *pyimport = dlsym(python_dll_lib, "PyImport_ImportModule");
         void *(*pyimport_f)(const char *) = (void *(*)(const char *))pyimport;
         void *mod = pyimport_f("pyapi_compat_if");
         fprintf(stdout, "mod=%p\n", mod);
+        DEBUG_LEAVE("Import pyapi package");
+
+        if (!m_pyeval) {
+            err = "Python extension did not set the PyEval handle";
+        }
     }
 
     DEBUG_LEAVE("getPyEval");
@@ -222,8 +232,10 @@ fprintf(stdout, "Error: Windows not supported\n");
                         out += buf;
                 }
 
+                /*
                 fprintf(stdout, "Output:\n");
                 fputs(out.c_str(), stdout);
+                 */
                 size_t idx = 0;
                 while (idx != std::string::npos) {
                     size_t start = idx;
@@ -247,38 +259,16 @@ fprintf(stdout, "Error: Windows not supported\n");
                         libdir = libdir.substr(0, libdir.size()-1);
                     }
 
-                    fprintf(stdout, "line=%s\n", line.c_str());
+                    DEBUG("line=%s", line.c_str());
                 }
 
-                fprintf(stdout, "ldlibrary=*%s*\n", ldlibrary.c_str());
-                fprintf(stdout, "libdir=*%s*\n", libdir.c_str());
-#ifdef UNDEFINED
-                std::vector<std::string> lines = StringUtil::split_lines(out);
-                for (auto it=lines.begin(); it!=lines.end(); it++) {
-                        if (it->find("LIBPATH:") == 0) {
-                                int32_t ci = it->find(':');
-                                std::vector<std::string> elems = StringUtil::split_pylist(it->substr(ci+1));
-                                python_dll = elems[0] + "/" + elems[1];
-                        } else if (it->find("PYTHONPATH:") == 0) {
-                                int32_t ci = it->find(':');
-                                std::vector<std::string> elems = StringUtil::split_pylist(it->substr(ci+1));
-                                for (auto eit=elems.begin(); eit!=elems.end(); eit++) {
-                                        if (*eit != "") {
-                                                if (pythonpath.size() > 0 && pythonpath.at(pythonpath.size()-1) != ':') {
-                                                        pythonpath += ":";
-                                                }
-                                                pythonpath += *eit;
-                                        }
-                                }
-                        }
-                }
-#endif /* UNDEFINED */
-
-                fprintf(stdout, "python_dll: %s\n", python_dll.c_str());
-                fprintf(stdout, "pythonpath: %s\n", pythonpath.c_str());
+                DEBUG("ldlibrary=%s", ldlibrary.c_str());
+                DEBUG("libdir=%s", libdir.c_str());
 
                 int32_t exit_code;
                 waitpid(pid, &exit_code, 0);
+
+                DEBUG("Exit code: %d", exit_code);
         }
 #endif
 

@@ -41,6 +41,7 @@ TestBase::~TestBase() {
 void TestBase::SetUp() {
     dmgr::IFactory *dmgr_f = dmgr_getFactory();
     m_dmgr = dmgr_f->getDebugMgr();
+    m_dmgr->enable(false);
     m_factory = pyapi_compat_if_getFactory();
     m_factory->init(m_dmgr);
 
@@ -96,5 +97,9 @@ void TestBase::SetUp() {
     }
 
 }
+
+void TestBase::enableDebug(bool en) {
+    m_dmgr->enable(en);
+};
 
 }

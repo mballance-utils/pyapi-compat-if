@@ -4,6 +4,7 @@ import sys
 import ctypes
 from libc.stdint cimport intptr_t
 cimport pyapi_compat_if.decl as decl
+cimport debug_mgr.core as dm
 
 cdef Factory _inst = None
 cdef class Factory(object):
@@ -11,6 +12,8 @@ cdef class Factory(object):
     @staticmethod
     def inst():
         cdef Factory factory
+        cdef decl.PyEvalExt *eval
+        cdef dm.Factory dm_f
         global _inst
 
         if _inst is None:
@@ -23,6 +26,12 @@ cdef class Factory(object):
             func.restype = ctypes.c_void_p
 
             hndl = <decl.IFactoryP>(<intptr_t>(func()))
+
+            dm_f = dm.Factory.inst()
+
+            eval = new decl.PyEvalExt(dm_f.getDebugMgr()._hndl)
+            hndl.setPyEval(eval)
+
             factory = Factory()
             factory._hndl = hndl
             _inst = factory

@@ -1,5 +1,5 @@
-/*
- * TestLoadPyEval.cpp
+/**
+ * PyEvalExt.h
  *
  * Copyright 2023 Matthew Ballance and Contributors
  *
@@ -16,31 +16,24 @@
  * limitations under the License.
  *
  * Created on:
- *     Author:
+ *     Author: 
  */
-#include "TestLoadPyEval.h"
-
+#pragma once
+#include "dmgr/IDebugMgr.h"
+#include "pyapi-compat-if/IPyEval.h"
 
 namespace pyapi {
 
 
-TestLoadPyEval::TestLoadPyEval() {
 
-}
+class PyEvalExt : public virtual IPyEval {
+public:
+    PyEvalExt(dmgr::IDebugMgr *dmgr);
 
-TestLoadPyEval::~TestLoadPyEval() {
+    virtual ~PyEvalExt();
 
-}
-
-TEST_F(TestLoadPyEval, smoke) {
-    std::string err;
-
-    enableDebug(false);
-
-    IPyEval *eval = m_factory->getPyEval(err);
-    ASSERT_TRUE(eval);
+};
 
 }
 
 
-}

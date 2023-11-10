@@ -292,7 +292,7 @@ ext = Extension("pyapi_compat_if.core",
             extra_compile_args=extra_compile_args,
             sources=[
                 os.path.join(pyapi_compat_if_dir, 'python', "core.pyx"), 
-#                os.path.join(pyapi_compat_if_dir, 'python', 'VisitorProxy.cpp'),
+                os.path.join(pyapi_compat_if_dir, 'python', 'PyEvalExt.cpp'),
 #                os.path.join(pyapi_compat_if_dir, 'python', 'ModelFieldDataClosure.cpp'),
 #                os.path.join(pyapi_compat_if_dir, 'python', 'ModelStructCreateHookClosure.cpp'),
 #                os.path.join(pyapi_compat_if_dir, 'python', 'MkModelBuildContext.cpp'),
