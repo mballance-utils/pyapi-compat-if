@@ -92,6 +92,11 @@ IPyEval *Factory::getPyEval(std::string &err) {
             // Have the library
         }
 
+        if (!python_dll_lib) {
+            err = "Failed to load Python library";
+            return 0;
+        }
+
         DEBUG_ENTER("Call Py_Initialize");
         void *pyinit = dlsym(python_dll_lib, "Py_Initialize");
         void (*pyinit_f)() = (void (*)())pyinit;
@@ -99,12 +104,24 @@ IPyEval *Factory::getPyEval(std::string &err) {
             (void *(*)(void *, const char *))dlsym(python_dll_lib, "PyObject_GetAttrString");
         void *(*pycall_f)(void *, const char *, ...) =
             (void *(*)(void *, const char *, ...))dlsym(python_dll_lib, "PyEval_CallFunction");
+
+        if (!pyinit_f) {
+            err = "Failed to load Py_Initialize";
+            return 0;
+        }
+
         pyinit_f();
         DEBUG_LEAVE("Call Py_Initialize");
 
         DEBUG_ENTER("Import pyapi package");
         void *pyimport = dlsym(python_dll_lib, "PyImport_ImportModule");
         void *(*pyimport_f)(const char *) = (void *(*)(const char *))pyimport;
+
+        if (!pyimport || !pyimport_f) {
+            err = "Failed to find PyImport_ImportModule";
+            return 0;
+        }
+
         m_ext_ref = reinterpret_cast<PyEvalObj *>(pyimport_f("pyapi_compat_if"));
         DEBUG_LEAVE("Import pyapi package");
 
@@ -281,7 +298,7 @@ fprintf(stdout, "Error: Windows not supported\n");
                         libdir = libdir.substr(0, libdir.size()-1);
                     }
 
-                    DEBUG("line=%s", line.c_str());
+//                    DEBUG("line=%s", line.c_str());
                 }
 
                 DEBUG("ldlibrary=%s", ldlibrary.c_str());

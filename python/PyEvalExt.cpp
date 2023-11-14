@@ -43,6 +43,14 @@ int PyEvalExt::finalize() {
     return 0;
 }
 
+void PyEvalExt::flush() {
+    PyObject *stream = PySys_GetObject("stdout");
+    PyObject *obj = PyObject_GetAttrString(stream, "flush");
+    PyObject *res = PyObject_Call(obj, PyTuple_New(0), 0);
+//    fprintf(stdout, "stream=%p obj=%p res=%p\n", stream, obj, res);
+    fflush(stdout);
+}
+
 void PyEvalExt::INCREF(PyEvalObj *obj) {
     Py_INCREF(reinterpret_cast<PyObject *>(obj));
 }
@@ -69,6 +77,30 @@ bool PyEvalExt::hasAttr(PyEvalObj *obj, const std::string &name) {
 
 bool PyEvalExt::isCallable(PyEvalObj *obj) {
     return PyCallable_Check(reinterpret_cast<PyObject *>(obj));
+}
+
+PyEvalObj *PyEvalExt::call(PyEvalObj *obj, PyEvalObj *args, PyEvalObj *kwargs) {
+    return reinterpret_cast<PyEvalObj *>(PyObject_Call(
+        reinterpret_cast<PyObject *>(obj), 
+        reinterpret_cast<PyObject *>(args), 
+        reinterpret_cast<PyObject *>(kwargs)));
+}
+
+PyEvalObj *PyEvalExt::mkTuple(int32_t sz) {
+    return reinterpret_cast<PyEvalObj *>(PyTuple_New(sz));
+}
+
+int32_t PyEvalExt::tupleSetItem(PyEvalObj *obj, uint32_t i, PyEvalObj *val) {
+    return PyTuple_SetItem(
+        reinterpret_cast<PyObject *>(obj), 
+        i, 
+        reinterpret_cast<PyObject *>(val));
+}
+
+PyEvalObj *PyEvalExt::tupleGetItem(PyEvalObj *obj, uint32_t i) {
+    return reinterpret_cast<PyEvalObj *>(PyTuple_GetItem(
+        reinterpret_cast<PyObject *>(obj),
+        i));
 }
 
 }

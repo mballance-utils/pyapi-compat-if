@@ -33,6 +33,8 @@ public:
     virtual ~PyEvalExt();
 
     virtual int finalize() override;
+    
+    virtual void flush() override;
 
     virtual void INCREF(PyEvalObj *obj) override;
 
@@ -45,6 +47,14 @@ public:
     virtual bool hasAttr(PyEvalObj *obj, const std::string &name) override;
 
     virtual bool isCallable(PyEvalObj *obj) override;
+
+    virtual PyEvalObj *call(PyEvalObj *obj, PyEvalObj *args, PyEvalObj *kwargs) override;
+
+    virtual PyEvalObj *mkTuple(int32_t sz) override;
+
+    virtual int32_t tupleSetItem(PyEvalObj *obj, uint32_t i, PyEvalObj *val) override;
+
+    virtual PyEvalObj *tupleGetItem(PyEvalObj *obj, uint32_t i) override;
 
 };
 

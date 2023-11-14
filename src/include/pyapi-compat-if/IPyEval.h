@@ -35,6 +35,8 @@ public:
 
     virtual int finalize() = 0;
 
+    virtual void flush() = 0;
+
     virtual void INCREF(PyEvalObj *obj) = 0;
 
     virtual void DECREF(PyEvalObj *obj) = 0;
@@ -46,6 +48,14 @@ public:
     virtual bool hasAttr(PyEvalObj *obj, const std::string &name) = 0;
 
     virtual bool isCallable(PyEvalObj *obj) = 0;
+
+    virtual PyEvalObj *call(PyEvalObj *obj, PyEvalObj *args, PyEvalObj *kwargs) = 0;
+
+    virtual PyEvalObj *mkTuple(int32_t sz) = 0;
+
+    virtual int32_t tupleSetItem(PyEvalObj *obj, uint32_t i, PyEvalObj *val) = 0; 
+
+    virtual PyEvalObj *tupleGetItem(PyEvalObj *obj, uint32_t i) = 0;
 
 };
 
