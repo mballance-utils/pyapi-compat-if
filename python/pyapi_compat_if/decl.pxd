@@ -1,4 +1,5 @@
 
+from libcpp.string cimport string as cpp_string
 cimport debug_mgr.decl as dm
 
 ctypedef IFactory *IFactoryP
@@ -14,5 +15,5 @@ cdef extern from "PyEvalExt.h" namespace "pyapi":
 cdef extern from "pyapi-compat-if/IFactory.h" namespace "pyapi":
     cdef cppclass IFactory:
         void init(dm.IDebugMgr *)
-        IPyEval *getPyEval()
+        IPyEval *getPyEval(cpp_string &)
         void setPyEval(IPyEval *)

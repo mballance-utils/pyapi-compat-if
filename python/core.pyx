@@ -3,6 +3,7 @@ import os
 import sys
 import ctypes
 from libc.stdint cimport intptr_t
+from libcpp.string cimport string as cpp_string
 cimport pyapi_compat_if.decl as decl
 cimport debug_mgr.core as dm
 
@@ -11,6 +12,17 @@ cdef class Factory(object):
 
     def __del__(self):
         print("Factory.__del__");
+
+    cpdef PyEval getPyEval(self):
+        cdef decl.IPyEval *pyeval
+        cdef cpp_string err
+
+        pyeval = self._hndl.getPyEval(err)
+
+        if pyeval == NULL:
+            raise Exception("Failed to get interpreter: %s" % err.decode())
+
+        return PyEval.mk(pyeval, False)
 
     @staticmethod
     def reset():
@@ -60,3 +72,12 @@ cdef class Factory(object):
 
 def __del__():
     print("core.pyx::__del__")
+
+cdef class PyEval(object):
+
+    @staticmethod
+    cdef PyEval mk(decl.IPyEval *hndl, bool owned=True):
+        ret = PyEval()
+        ret._hndl = hndl
+        return ret
+
