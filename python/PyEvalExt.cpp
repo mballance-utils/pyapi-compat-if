@@ -44,9 +44,16 @@ int PyEvalExt::finalize() {
 }
 
 void PyEvalExt::flush() {
+    // If we're here, assume we have already captured error info
+    PyErr_Clear();
+
     PyObject *stream = PySys_GetObject("stdout");
-    PyObject *obj = PyObject_GetAttrString(stream, "flush");
-    /*PyObject *res =*/ PyObject_Call(obj, PyTuple_New(0), 0);
+    if (stream) {
+        PyObject *obj = PyObject_GetAttrString(stream, "flush");
+        if (obj) {
+            /*PyObject *res =*/ PyObject_Call(obj, PyTuple_New(0), 0);
+        }
+    }
 //    fprintf(stdout, "stream=%p obj=%p res=%p\n", stream, obj, res);
     fflush(stdout);
 }

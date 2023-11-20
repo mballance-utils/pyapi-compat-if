@@ -3,8 +3,11 @@ from libcpp.string cimport string as cpp_string
 cimport debug_mgr.decl as dm
 
 ctypedef IFactory *IFactoryP
+ctypedef PyEvalObj *PyEvalObjP
 
 cdef extern from "pyapi-compat-if/IPyEval.h" namespace "pyapi":
+    cdef struct PyEvalObj:
+        pass
     cdef cppclass IPyEval:
         pass
 
