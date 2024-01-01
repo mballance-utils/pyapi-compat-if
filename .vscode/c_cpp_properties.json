@@ -6,9 +6,11 @@
                 "${default}",
                 "src",
                 "src/include",
+                "build/src/pyeval_base/include",
                 "test",
                 "packages/debug-mgr/src/include",
-                "packages/gtest/googletest/include"
+                "packages/gtest/googletest/include",
+                "packages/python/include/python3.12"
             ],
             "defines": [
                 "${default}"

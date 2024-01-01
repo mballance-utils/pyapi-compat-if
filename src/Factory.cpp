@@ -66,7 +66,7 @@ void Factory::reset() {
 }
 
 void Factory::setPyEval(IPyEval *eval) {
-    DEBUG_ENTER("setPyEval");
+    DEBUG_ENTER("setPyEvalBase");
     m_pyeval = IPyEvalUP(eval);
     DEBUG_LEAVE("setPyEval");
 }

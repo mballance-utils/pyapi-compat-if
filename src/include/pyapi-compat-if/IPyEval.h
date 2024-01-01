@@ -19,6 +19,7 @@
  *     Author: 
  */
 #pragma once
+#include "pyapi-compat-if/IPyEvalBase.h"
 #include <memory>
 
 namespace pyapi {
@@ -28,7 +29,7 @@ struct PyEvalObj;
 
 class IPyEval;
 using IPyEvalUP=std::unique_ptr<IPyEval>;
-class IPyEval {
+class IPyEval : public virtual IPyEvalBase {
 public:
 
     virtual ~IPyEval() { }

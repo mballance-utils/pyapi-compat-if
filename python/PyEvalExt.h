@@ -21,12 +21,15 @@
 #pragma once
 #include "dmgr/IDebugMgr.h"
 #include "pyapi-compat-if/IPyEval.h"
+#include "pyapi-compat-if/impl/PyEvalExtBase.h"
 
 namespace pyapi {
 
 
 
-class PyEvalExt : public virtual IPyEval {
+class PyEvalExt : 
+    public virtual IPyEval,
+    public virtual PyEvalExtBase {
 public:
     PyEvalExt(dmgr::IDebugMgr *dmgr);
 

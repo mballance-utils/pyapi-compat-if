@@ -302,6 +302,7 @@ ext = Extension("pyapi_compat_if.core",
             include_dirs=[
 #                os.path.join(pyapi_compat_if_dir, 'src'),
                 os.path.join(pyapi_compat_if_dir, 'src', 'include'),
+                os.path.join(pyapi_compat_if_dir, 'build/src/pyeval_base/include'),
                 os.path.join(packages_dir, "debug-mgr/src/include")
             ]
         )

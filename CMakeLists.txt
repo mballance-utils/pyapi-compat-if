@@ -34,6 +34,7 @@ include(ivpm)
 
 Ivpm_AddPythonExtProject(debug-mgr debug_mgr)
 
+
 if(NOT WIN32)
   add_compile_options(-fPIC)
 endif()
