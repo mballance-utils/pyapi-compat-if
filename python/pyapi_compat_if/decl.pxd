@@ -11,7 +11,7 @@ cdef extern from "pyapi-compat-if/IPyEval.h" namespace "pyapi":
     cdef cppclass IPyEval:
         pass
 
-cdef extern from "pyapi-compat-if/impl/IPyEvalBase.h" namespace "pyapi":
+cdef extern from "pyapi-compat-if/IPyEvalBase.h" namespace "pyapi":
     cdef cppclass IPyEvalBase:
         pass
 

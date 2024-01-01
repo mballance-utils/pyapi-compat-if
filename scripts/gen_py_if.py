@@ -274,14 +274,23 @@ def main():
         "PyThread_", "PyTraceBack_",
         "PyUnicode_", "PyUnstable_", "PyWideStringList_",
         "PyGILState_", "PyInterpreterState_", "PyThreadState_", "PyStructSequence_",
+        "PyWeakref_",
         "PyDescr_" }
     exclude = {
         "Py_INCREF", "Py_DECREF", "Py_Exit", "PyInit__imp",
         "PyModule_AddType",
         "PyFunction_SetVectorcall", "PyVectorcall_Function", 
+        "PyVectorcall_NARGS",
         "PyBytes_AS_STRING", "PyBytes_GET_SIZE",
         "PyByteArray_AS_STRING", "PyByteArray_GET_SIZE",
-        "PyDict_AddWatcher",
+        "PyCell_GET", "PyCell_SET",
+        "PyDict_AddWatcher", "PyDict_GET_SIZE",
+        "PyEval_AcquireLock", # Deprecated
+        "PyEval_CallObjectWithKeywords", # Deprecated
+        "PyEval_InitThreads", # Deprecated
+        "PyEval_ReleaseLock", # Deprecated
+        "PyEval_ThreadsInitialized", # Deprecated
+        "PyEval_CallFunction", # Deprecated
         "PyEval_SetProfile", "PyEval_SetProfileAllThreads", 
         "PyEval_SetTrace", "PyEval_SetTraceAllThreads",
         "PyEval_MergeCompilerFlags",
@@ -289,16 +298,42 @@ def main():
         "PyEval_GetFrame", "PyEval_EvalFrame", "PyEval_EvalFrameEx",
         "PyEval_SaveThread", "PyEval_RestoreThread", "PyEval_AcquireThread",
         "PyEval_ReleaseThread",
-        "PyImport_AddAuditHook", "PyImport_AppendInittab",
+        "PyErr_BadInternalCall",
+        "PyFloat_AS_DOUBLE",
+        "PyImport_AddAuditHook", "PyImport_AppendInittab", "PyImport_ExtendInittab",
+        "PyInstanceMethod_GET_FUNCTION",
         "PyIter_Send",
-        "PyObject_GetBuffer", "Py_SET_SIZE", "PyType_FromSpec", "PyType_FromSpecWithBases",
+        "PyList_GET_SIZE", "PyList_SET_ITEM",
+        "PyMapping_Length",
+        "PyMethod_GET_FUNCTION", "PyMethod_GET_SELF",
+        "PyObject_GetBuffer", "Py_SET_SIZE", 
+        "PySequence_In", "PySequence_Length",
+        "PySet_GET_SIZE",
+        "PySlice_GetIndicesEx",
+        "PyTuple_GET_SIZE", "PyTuple_SET_ITEM",
+        "PyType_Check", "PyType_CheckExact",
+        "PyType_FromSpec", "PyType_FromSpecWithBases",
         "PyType_FromModuleAndSpec", "PyType_FromMetaclass", "PyType_GetModuleByDef",
         "PyType_AddWatcher",
+        "PyObject_AsCharBuffer", # Deprecated
+        "PyObject_AsReadBuffer", # Deprecated
+        "PyObject_AsWriteBuffer", # Deprecated
+        "PyObject_CheckReadBuffer", # Deprecated
         "PyObject_Hash", "PyObject_HashNotImplemented", "PyObject_InitVar",
-        "PyObject_GetArenaAllocator", "PyObject_SetArenaAllocator",
+        "PyObject_GetArenaAllocator", "PyObject_SetArenaAllocator", "PyObject_Length",
+        "PyObject_TypeCheck",
         "Py_CompileStringExFlags", "Py_CompileStringObject", 
         "Py_AddPendingCall",
-        "Py_AtExit", "Py_ExitStatusException", "PyOS_getsig", "PyOS_setsig", "Py_PreInitialize",
+        "Py_AtExit", 
+        "Py_SetPath", # Deprecated
+        "Py_SetProgramName", # Deprecated
+        "Py_SetPythonHome", # Deprecated
+        "Py_SetStandardStreamEncoding", # Deprecated
+        "Py_CompileString", "Py_ExitStatusException", "Py_FatalError", "Py_IS_TYPE", "Py_Is",
+        "Py_IsFalse", "Py_IsTrue", "Py_IsNone", "Py_NewRef", "Py_REFCNT", "Py_SET_REFCNT",
+        "Py_SET_TYPE", "Py_SIZE", "Py_TYPE", "Py_XDECREF", "Py_XINCREF", "Py_XNewRef",
+        "PyOS_AfterFork", # Deprecated
+        "PyOS_getsig", "PyOS_setsig", "Py_PreInitialize",
         "Py_PreInitializeFromBytesArgs", "Py_PreInitializeFromArgs",
         "Py_InitializeFromConfig", "PyExitStatusException",
         "Py_UNICODE_IS_SURROGATE", "Py_UNICODE_IS_HIGH_SURROGATE", "Py_UNICODE_IS_LOW_SURROGATE",
