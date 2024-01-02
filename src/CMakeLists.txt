@@ -34,4 +34,12 @@ install(TARGETS pyapi-compat-if
     DESTINATION lib
     EXPORT pyapi-compat-if-targets)
 
+install(FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/pyeval_base/include/pyapi-compat-if/IPyEvalBase.h
+    DESTINATION include/pyapi-compat-if)
+
+install(FILES 
+    ${CMAKE_CURRENT_BINARY_DIR}/pyeval_base/include/pyapi-compat-if/impl/PyEvalExtBase.h
+    DESTINATION include/pyapi-compat-if/impl)
+
 

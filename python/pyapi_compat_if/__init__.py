@@ -17,7 +17,12 @@ def get_incdirs():
         return [os.path.join(pkg_dir, "include")]
     else:
         root_dir = os.path.abspath(os.path.join(pkg_dir, "../.."))
-        return [os.path.join(root_dir, "src", "include")]
+        ret = [
+            os.path.join(root_dir, "src", "include"),
+            os.path.join(root_dir, "build/src/pyeval_base/include")
+        ]
+        print("ret: %s" % str(ret))
+        return ret
 
 
 def init():

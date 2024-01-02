@@ -131,7 +131,7 @@ def generate_ext_base(fp_h, functions):
     fp_h.write("class PyEvalExtBase : public virtual IPyEvalBase {\n")
     fp_h.write("public:\n")
     ind_h += "    "
-    fp_h.write("%sPyEvalExtBase();\n" % ind_h)
+    fp_h.write("%sPyEvalExtBase() { }\n" % ind_h)
     fp_h.write("\n")
     fp_h.write("%svirtual ~PyEvalExtBase() { }\n" % ind_h)
 
@@ -271,9 +271,9 @@ def main():
         "PyMem_", "PyMember_", "PyMemoryView_", "PyModule_", "PyModuleDef_", 
         "PyPickleBuffer_",
         "PyPreConfig_", "PyRun_", "PyState_", "PyStatus_", "PySys_",
-        "PyThread_", "PyTraceBack_",
+        "PyThread_", "PyTraceBack_", "PyTraceMalloc_", 
         "PyUnicode_", "PyUnstable_", "PyWideStringList_",
-        "PyGILState_", "PyInterpreterState_", "PyThreadState_", "PyStructSequence_",
+        "PyGILState_", "PyInterpreterState_", "PySignal_", "PyThreadState_", "PyStructSequence_",
         "PyWeakref_",
         "PyDescr_" }
     exclude = {
