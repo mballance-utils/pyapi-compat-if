@@ -79,6 +79,7 @@ def generate_base_if(out, functions):
     out.write("typedef struct _object PyObject;\n")
     out.write("typedef struct _typeobject PyTypeObject;\n")
     out.write("typedef ssize_t Py_ssize_t;\n")
+    out.write("typedef wchar_t Py_UNICODE;\n")
     out.write("\n")
     out.write("namespace pyapi {\n")
     out.write("\n")
@@ -268,6 +269,7 @@ def main():
         "_", "PyAsyncGen_", "PyBuffer_", "PyCapsule_", "PyCode_", "PyComplex_", 
         "PyConfig_", "PyCFunction_", "PyCMethod_", "PyCoro_",
         "PyFile_", "PyFrame_", "PyFunction_", "PyGen_", "PyHash_", 
+        "PyLineTable_",
         "PyMem_", "PyMember_", "PyMemoryView_", "PyModule_", "PyModuleDef_", 
         "PyPickleBuffer_",
         "PyPreConfig_", "PyRun_", "PyState_", "PyStatus_", "PySys_",
