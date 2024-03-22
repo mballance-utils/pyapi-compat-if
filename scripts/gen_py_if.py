@@ -266,11 +266,13 @@ def main():
 
     include_pref = {"Py_", "PyLong_"}
     exclude_pref = {
-        "_", "PyAsyncGen_", "PyBuffer_", "PyCapsule_", "PyCode_", "PyComplex_", 
+        "_", "PyArena_", "PyAsyncGen_", "PyAST_", "PyBuffer_", 
+        "PyCapsule_", "PyCode_", "PyComplex_", 
         "PyConfig_", "PyCFunction_", "PyCMethod_", "PyCoro_",
-        "PyFile_", "PyFrame_", "PyFunction_", "PyGen_", "PyHash_", 
+        "PyFile_", "PyFrame_", "PyFunction_", "PyFuture_", "PyGen_", "PyHash_", 
         "PyLineTable_",
         "PyMem_", "PyMember_", "PyMemoryView_", "PyModule_", "PyModuleDef_", 
+        "PyNode_", "PyParser_", 
         "PyPickleBuffer_",
         "PyPreConfig_", "PyRun_", "PyState_", "PyStatus_", "PySys_",
         "PyThread_", "PyTraceBack_", "PyTraceMalloc_", 
@@ -300,9 +302,11 @@ def main():
         "PyEval_GetFrame", "PyEval_EvalFrame", "PyEval_EvalFrameEx",
         "PyEval_SaveThread", "PyEval_RestoreThread", "PyEval_AcquireThread",
         "PyEval_ReleaseThread",
+        "PyExceptionClass_Name",
         "PyErr_BadInternalCall",
         "PyFloat_AS_DOUBLE",
         "PyImport_AddAuditHook", "PyImport_AppendInittab", "PyImport_ExtendInittab",
+        "PyIndex_Check", "PyIter_Check",
         "PyInstanceMethod_GET_FUNCTION",
         "PyIter_Send",
         "PyList_GET_SIZE", "PyList_SET_ITEM",
@@ -327,6 +331,7 @@ def main():
         "Py_CompileStringExFlags", "Py_CompileStringObject", 
         "Py_AddPendingCall",
         "Py_AtExit", 
+        "Py_GetArgcArgv",
         "Py_SetPath", # Deprecated
         "Py_SetProgramName", # Deprecated
         "Py_SetPythonHome", # Deprecated
@@ -338,6 +343,7 @@ def main():
         "PyOS_getsig", "PyOS_setsig", "Py_PreInitialize",
         "Py_PreInitializeFromBytesArgs", "Py_PreInitializeFromArgs",
         "Py_InitializeFromConfig", "PyExitStatusException",
+        "Py_SymtableString", "Py_SymtableStringObject",
         "Py_UNICODE_IS_SURROGATE", "Py_UNICODE_IS_HIGH_SURROGATE", "Py_UNICODE_IS_LOW_SURROGATE",
         "Py_UNICODE_JOIN_SURROGATES", "Py_UNICODE_HIGH_SURROGATE", "Py_UNICODE_LOW_SURROGATE",
         "Py_UNICODE_ISSPACE", "Py_UNICODE_ISALNUM"}
