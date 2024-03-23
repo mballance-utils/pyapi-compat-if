@@ -11,7 +11,8 @@ class PkgInfo(ivpm.PkgInfo):
         if os.path.isdir(os.path.join(projdir, "src")):
             self._incdirs = [
                 os.path.join(projdir, "src", "include"),
-                os.path.join(projdir, "python")]
+                os.path.join(projdir, "python"),
+                os.path.join(projdir, "build", "include")]
             self._libdirs = [
                 os.path.join(projdir, "build", "lib"),
                 os.path.join(projdir, "build", "lib64")]
@@ -19,4 +20,5 @@ class PkgInfo(ivpm.PkgInfo):
             self._incdirs = [os.path.join(pkgdir, "share", "include")]
             self._libdirs = [os.path.join(pkgdir)]
 
+        self._deps = ["debug-mgr"]
         self._libs = ["pyapi-compat-if"]
