@@ -332,6 +332,7 @@ def main():
         "Py_AddPendingCall",
         "Py_AtExit", 
         "Py_GetArgcArgv",
+        "Py_FrozenMain", "Py_Main",
         "Py_SetPath", # Deprecated
         "Py_SetProgramName", # Deprecated
         "Py_SetPythonHome", # Deprecated
