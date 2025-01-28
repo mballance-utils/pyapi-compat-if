@@ -316,7 +316,7 @@ def main():
         "PyList_GET_SIZE", "PyList_SET_ITEM",
         "PyMapping_Length",
         "PyMethod_GET_FUNCTION", "PyMethod_GET_SELF",
-        "PyObject_GenericHash", "PyObject_GetBuffer", "Py_SET_SIZE", 
+        "PyObject_GenericHash", "PyObject_GetBuffer", "PyObject_VisitManagedDict", "Py_SET_SIZE", 
         "PySequence_In", "PySequence_Length",
         "PySet_GET_SIZE",
         "PySlice_GetIndicesEx",
