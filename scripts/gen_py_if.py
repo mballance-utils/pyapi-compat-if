@@ -268,10 +268,12 @@ def main():
     exclude_pref = {
         "_", "PyArena_", "PyAsyncGen_", "PyAST_", "PyBuffer_", 
         "PyCapsule_", "PyCode_", "PyComplex_", 
-        "PyConfig_", "PyCFunction_", "PyCMethod_", "PyCoro_",
+        "PyConfig_", "PyCriticalSection_", "PyCriticalSection2_",
+        "PyCFunction_", "PyCMethod_", "PyCoro_",
         "PyFile_", "PyFrame_", "PyFunction_", "PyFuture_", "PyGen_", "PyHash_", 
         "PyLineTable_",
         "PyMem_", "PyMember_", "PyMemoryView_", "PyModule_", "PyModuleDef_", 
+        "PyMonitoring_",
         "PyNode_", "PyParser_", 
         "PyPickleBuffer_",
         "PyPreConfig_", "PyRun_", "PyState_", "PyStatus_", "PySys_",
