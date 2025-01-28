@@ -36,7 +36,7 @@ PyEvalExt::~PyEvalExt() {
 int PyEvalExt::finalize() {
     PyObject *ext = PyImport_ImportModule("pyapi_compat_if");
     PyObject *del = PyObject_GetAttrString(ext, "reset");
-    PyEval_CallFunction(del, "");
+    PyObject_CallFunction(del, "");
 
     // For testing, at least, finalizing really isn't a good idea
 //    return Py_FinalizeEx();
