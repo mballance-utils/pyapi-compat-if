@@ -61,6 +61,10 @@ setup_args = dict(
   license = "Apache 2.0",
   keywords = ["SystemVerilog", "Verilog", "RTL", "Python"],
   url = "https://github.com/mballance-utils/pyapi-compat-if",
+  package_data = {'pyapi_compat_if': [
+      'core.pxd',
+      'decl.pxd'
+  ]},
   install_requires=[
       'debug-mgr'
   ],
