@@ -86,6 +86,7 @@ if isSrcBuild:
         "pyapi_compat_if": {
             ("src/include", "share"),
             ("build/include", "share"),
+            ("python/PyEvalExt.h", "share/include"),
             ("build/{libdir}/{libpref}pyapi-compat-if{dllext}", "")
         }
     }
