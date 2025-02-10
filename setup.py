@@ -79,7 +79,7 @@ setup_args = dict(
 if isSrcBuild:
     setup_args["ivpm_extdep_pkgs"] = ["debug-mgr"]
     setup_args["ivpm_extra_data"] = {
-        "debug_mgr": {
+        "pyapi_compat_if": {
             ("src/include", "share"),
             ("build/{libdir}/{libpref}pyapi-compat-if{dllext}", "")
         }
