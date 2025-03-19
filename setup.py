@@ -69,8 +69,10 @@ setup_args = dict(
       'debug-mgr'
   ],
   setup_requires=[
+    'cython',
+    'debug-mgr',
+    'ivpm',
     'setuptools_scm',
-    'cython'
   ],
   entry_points={
     "ivpm.pkginfo": [
