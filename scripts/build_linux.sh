@@ -1,5 +1,7 @@
 #!/bin/sh -x
 
+yum install -y ninja-build
+
 echo "BUILD_NUM=${BUILD_NUM}" >> python/pyapi_compat_if/__build_num__.py
 ${IVPM_PYTHON} -m pip install ivpm cython setuptools --pre
 ${IVPM_PYTHON} -m ivpm update -a --py-prerls-packages
