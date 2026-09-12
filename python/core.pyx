@@ -40,9 +40,22 @@ cdef class Factory(object):
             ext_dir = os.path.dirname(os.path.abspath(__file__))
             build_dir = os.path.abspath(os.path.join(ext_dir, "../../build"))
 
+            # The core library is named by the platform that built it. This
+            # was hard-coded to the Linux spelling, so Factory.inst() raised
+            # "Extension library core ... doesn't exist" on macOS (which ships
+            # libpyapi-compat-if.dylib) and on Windows (pyapi-compat-if.dll) --
+            # even though the wheel contained the library all along, in this
+            # very directory. Importing the extension never reaches here, which
+            # is why an import-only smoke test stayed green through it.
+            if sys.platform == "win32":
+                libname = "pyapi-compat-if.dll"
+            elif sys.platform == "darwin":
+                libname = "libpyapi-compat-if.dylib"
+            else:
+                libname = "libpyapi-compat-if.so"
+
             # First, look in the build directory
             core_lib = None
-            libname = "libpyapi-compat-if.so"
             for libdir in ("lib", "lib64"):
                 if os.path.isfile(os.path.join(build_dir, libdir, libname)):
                     core_lib = os.path.join(build_dir, libdir, libname)

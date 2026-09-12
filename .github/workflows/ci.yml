@@ -237,13 +237,17 @@ jobs:
           ./packages/python/bin/python3 setup.py bdist_wheel
       - name: Smoke-test the wheel
         # There is no Python test suite in this repo yet, so this is not the
-        # test step debug-mgr has. Importing the extension out of an INSTALLED
-        # wheel is still worth a step of its own: it is what catches a wheel
-        # that compiled but cannot resolve libpyapi-compat-if or libdebug-mgr at
-        # load time -- which a build-only leg reports as green.
+        # test step debug-mgr has.
+        #
+        # Factory.inst(), not just an import. The import alone never loads the
+        # core library, so it stayed green while core.pyx looked for a .so on
+        # macOS and Windows and the Windows DLL exported nothing at all. This
+        # is the cheapest call that exercises dlopen/LoadLibrary, the exported
+        # entry point, and debug-mgr -- i.e. the parts that are actually
+        # platform-specific.
         run: |
           ./packages/python/bin/python3 -m pip install dist/*.whl
-          ./packages/python/bin/python3 -c "import pyapi_compat_if, pyapi_compat_if.core as core; print('import OK:', core.__file__)"
+          ./packages/python/bin/python3 -c "import pyapi_compat_if.core as core; print('import OK:', core.__file__); print('Factory.inst() OK:', core.Factory.inst())"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -303,10 +307,11 @@ jobs:
         ./packages/python/Scripts/python setup.py build bdist_wheel
 
     - name: Smoke-test the wheel
+      # Factory.inst() rather than a bare import -- see the macOS leg.
       shell: bash
       run: |
         ./packages/python/Scripts/python -m pip install dist/*.whl
-        ./packages/python/Scripts/python -c "import pyapi_compat_if, pyapi_compat_if.core as core; print('import OK:', core.__file__)"
+        ./packages/python/Scripts/python -c "import pyapi_compat_if.core as core; print('import OK:', core.__file__); print('Factory.inst() OK:', core.Factory.inst())"
 
     - uses: actions/upload-artifact@v4
       with:

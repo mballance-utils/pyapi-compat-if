@@ -15,6 +15,19 @@ file(GLOB pyapi_compat_if_SRC
   
 add_library(pyapi-compat-if SHARED ${pyapi_compat_if_SRC})
 
+# ELF and Mach-O export every symbol by default; MSVC exports NOTHING without
+# being told. The Windows DLL therefore shipped with an empty export directory
+# -- no .edata section at all, and the string "pyapi_compat_if_getFactory" was
+# not even present in the binary -- so the one entry point this whole design
+# hangs off was unreachable, and no import .lib was produced for anyone
+# wanting to link the library from C++.
+#
+# This matches the other two platforms rather than curating an export list.
+# Note it covers functions and methods but NOT data symbols; a global that
+# ever needs exporting has to say __declspec(dllexport) for itself.
+set_target_properties(pyapi-compat-if PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 target_include_directories(pyapi-compat-if PUBLIC
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/include

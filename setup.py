@@ -90,13 +90,26 @@ setup_args = dict(
 
 if isSrcBuild:
     setup_args["ivpm_extdep_pkgs"] = ["debug-mgr"]
+    # A LIST, not a set. ivpm copies these in iteration order, and three of the
+    # four resolve to the same destination directory (share/include): two
+    # directory copies and one single file. Set iteration order depends on
+    # PYTHONHASHSEED, so the order changed from build to build and roughly one
+    # build in six died with
+    #
+    #   error: [Errno 2] No such file or directory:
+    #     'build/bdist.linux-x86_64/wheel/pyapi_compat_if/share/include/PyEvalExt.h'
+    #
+    # A 1-in-6 packaging failure across a 40-leg matrix is a red run most of the
+    # time, and it would have looked like a flaky runner rather than a bug here.
+    # Directories first, so share/include exists before the file is copied into
+    # it.
     setup_args["ivpm_extra_data"] = {
-        "pyapi_compat_if": {
+        "pyapi_compat_if": [
             ("src/include", "share"),
             ("build/include", "share"),
             ("python/PyEvalExt.h", "share/include"),
             ("build/{libdir}/{libpref}pyapi-compat-if{dllext}", "")
-        }
+        ]
     }
 
 setup(**setup_args)
