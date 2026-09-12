@@ -107,13 +107,14 @@ def generate_base_if(out, functions):
     out.write("#include <stdio.h>\n")
     out.write("#include <stdarg.h>\n")
     out.write("\n")
-    # MSVC has no <sys/types.h> ssize_t. Python itself spells Py_ssize_t as
-    # SSIZE_T out of BaseTsd.h there, so do the same -- otherwise every
-    # declaration below that mentions Py_ssize_t is a syntax error, which is
-    # what the Windows leg hit the first time it was ever run.
+    # MSVC has no <sys/types.h> ssize_t, so every declaration below mentioning
+    # Py_ssize_t was a syntax error there -- what the Windows leg hit the first
+    # time it was ever run. intptr_t, out of the <stdint.h> already included
+    # above, is exactly what CPython uses (Py_ssize_t is Py_intptr_t), and it
+    # keeps this header free of any Windows SDK include: it is consumed by
+    # translation units that otherwise pull in no platform headers at all.
     out.write("#if defined(_MSC_VER)\n")
-    out.write("#include <BaseTsd.h>\n")
-    out.write("typedef SSIZE_T Py_ssize_t;\n")
+    out.write("typedef intptr_t Py_ssize_t;\n")
     out.write("#else\n")
     out.write("#include <sys/types.h>\n")
     out.write("typedef ssize_t Py_ssize_t;\n")
@@ -411,6 +412,7 @@ def main():
 
     functions = []
     skipped = []
+    macros = []
     for f in data.namespace.functions:
         name = f.name.segments[0].name
         first_under = name.find("_")
@@ -418,6 +420,18 @@ def main():
 #        print("name: %s" % name)
         include = prefix not in exclude_pref and name not in exclude
         include &= not f.vararg
+
+        if include and name in pp.macros:
+            # PyEvalExtBase.h includes Python.h, so a generated method whose
+            # name is ALSO a macro there gets rewritten by the preprocessor.
+            # 3.14 added `#define Py_PACK_FULL_VERSION _Py_PACK_FULL_VERSION`,
+            # aliasing a function-like macro, and the method turned into
+            # nonsense at its declaration. Object-like aliases are no safer:
+            # PyObject_Length is `#define`d to PyObject_Size, which would emit
+            # the same member twice. Most of the exclude list above is this
+            # rule applied by hand -- asking the preprocessor keeps it current.
+            macros.append(name)
+            include = False
 
         if include:
             unknown = unknown_types(f)
@@ -440,6 +454,9 @@ def main():
     functions.sort(key=lambda f: f.name.segments[0].name)
 
     print("gen_py_if: %d functions" % len(functions))
+    if macros:
+        print("gen_py_if: skipping %d name(s) that are macros in Python.h: %s" % (
+            len(macros), ", ".join(sorted(macros))))
     for name, types in skipped:
         print("gen_py_if: skipping %s -- undeclared type(s): %s" % (name, ", ".join(types)))
 
