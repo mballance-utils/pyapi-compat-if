@@ -28,6 +28,12 @@ add_library(pyapi-compat-if SHARED ${pyapi_compat_if_SRC})
 set_target_properties(pyapi-compat-if PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+if (WIN32)
+  # EnumProcessModules, used by Factory::find_python_lib to spot a Python that
+  # some other component already loaded into this process.
+  target_link_libraries(pyapi-compat-if PRIVATE psapi)
+endif()
+
 target_include_directories(pyapi-compat-if PUBLIC
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/include

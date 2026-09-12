@@ -26,6 +26,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <psapi.h>
 // THE #undefs BELOW ARE LOAD-BEARING. windows.h defines INCREF and DECREF as
 // macros -- measured on the CI runner, and note it does so EVEN WITH
 // WIN32_LEAN_AND_MEAN, so the defines above do not save you. IPyEval.h
@@ -196,7 +197,29 @@ bool Factory::find_python_lib(void **python_dll) {
     *python_dll = 0;
 
 #ifdef _WIN32
-fprintf(stdout, "Error: WIN32 must find loaded DLLs\n");
+    // The Windows analogue of the /proc/self/maps scan below, and a tidier one:
+    // ask the loader for the modules in this process and test each for
+    // Py_Initialize. Note this does NOT take a reference the way the POSIX
+    // branch's dlopen does -- the handle is borrowed from the loader, which is
+    // what we want, since we are looking for a Python that someone else loaded.
+    {
+        HMODULE modules[1024];
+        DWORD   needed = 0;
+
+        if (EnumProcessModules(
+                GetCurrentProcess(), modules, sizeof(modules), &needed)) {
+            DWORD n = needed / sizeof(HMODULE);
+            if (n > (sizeof(modules)/sizeof(modules[0]))) {
+                n = sizeof(modules)/sizeof(modules[0]);
+            }
+            for (DWORD i=0; i<n; i++) {
+                if (GetProcAddress(modules[i], "Py_Initialize")) {
+                    *python_dll = reinterpret_cast<void *>(modules[i]);
+                    break;
+                }
+            }
+        }
+    }
 #else
     /**
      * Find the libraries loaded by the process
@@ -275,7 +298,73 @@ bool Factory::get_python_info(
         std::string libdir;
 
 #ifdef _WIN32
-fprintf(stdout, "Error: Windows not supported\n");
+    // Do NOT try to reconstruct the DLL path from sysconfig the way the POSIX
+    // branch does. LDLIBRARY and LIBDIR are POSIX-only config vars --
+    // sysconfig._init_non_posix sets only LIBDEST, BINLIBDEST, INCLUDEPY,
+    // EXT_SUFFIX, EXE, VERSION, BINDIR and TZPATH -- so the parse below would
+    // find nothing on Windows however it was spelled.
+    //
+    // Nor is guessing base_prefix + "python{ver}.dll" good enough: the layout
+    // differs between the python.org installer, the Microsoft Store package,
+    // the embeddable package and a venv, and the name carries a 't' suffix for
+    // free-threaded builds and '_d' for debug ones. The docs do not specify a
+    // location to rely on.
+    //
+    // So ask the interpreter where its own DLL is. sys.dllhandle is documented
+    // as "Integer specifying the handle of the Python DLL. Availability:
+    // Windows", and GetModuleFileNameW turns that into the path the loader
+    // actually used. That is correct for every layout above, by construction.
+    //
+    // The -c body deliberately contains no quotes of its own, so the whole
+    // thing survives cmd.exe with one level of quoting.
+    {
+        static const char *PY_DLL_QUERY =
+            " -c \"import sys,ctypes;"
+            "b=ctypes.create_unicode_buffer(32768);"
+            "ctypes.windll.kernel32.GetModuleFileNameW("
+            "ctypes.c_void_p(sys.dllhandle),b,len(b));"
+            "print(b.value)\"";
+
+        // python3 is usually NOT on PATH on Windows; python.exe is, and the
+        // py launcher is the fallback when several versions are installed.
+        const char *launchers[] = {"python", "py -3"};
+
+        for (size_t i=0; i<sizeof(launchers)/sizeof(launchers[0]); i++) {
+            std::string cmd = std::string(launchers[i]) + PY_DLL_QUERY;
+
+            // _popen rather than the CreateProcess/pipe plumbing the POSIX
+            // branch needs. Caveat: it requires a console subsystem, so a GUI
+            // host would need the longer road.
+            FILE *fp = _popen(cmd.c_str(), "r");
+            if (!fp) {
+                continue;
+            }
+
+            char buf[4096];
+            std::string out;
+            while (fgets(buf, sizeof(buf), fp)) {
+                out += buf;
+            }
+            int rc = _pclose(fp);
+
+            while (out.size() && (out.back() == '\n' || out.back() == '\r')) {
+                out.pop_back();
+            }
+
+            DEBUG("launcher=%s rc=%d dll=%s", launchers[i], rc, out.c_str());
+
+            if (rc == 0 && out.size()) {
+                python_dll = out;
+                return true;
+            }
+        }
+
+        // The POSIX branch leaves err untouched on failure, which surfaces to
+        // the caller as an empty message. Say something useful instead.
+        err = "could not locate the Python DLL: neither `python` nor `py -3` "
+              "answered a sys.dllhandle query";
+        return false;
+    }
 #else
         {
                 int cout_pipe[2];
