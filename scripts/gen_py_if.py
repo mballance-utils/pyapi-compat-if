@@ -22,6 +22,7 @@
 import argparse
 import io
 import os
+import re
 import pcpp
 import sys
 from cxxheaderparser.simple import parse_string
@@ -66,6 +67,37 @@ def gen_type(t):
 #        return "<unknown %s>" % str(t)
     pass
 
+# The only Python types IPyEvalBase.h declares -- see generate_base_if. The
+# header deliberately does not include Python.h, so a consumer needs no Python
+# development headers to implement or call the interface. Anything a signature
+# mentions beyond these and the C builtins below would be an undeclared type in
+# the generated C++.
+# _object and _typeobject are the struct tags behind the PyObject and
+# PyTypeObject typedefs. Some signatures spell them that way -- PyType_GetModule
+# takes a `struct _typeobject *` on 3.10 -- and an elaborated type specifier for
+# an incomplete struct is perfectly good C++, so they belong here too.
+declared_types = {"PyObject", "PyTypeObject", "Py_ssize_t", "Py_UNICODE",
+                  "_object", "_typeobject"}
+
+builtin_types = {
+    "void", "char", "short", "int", "long", "float", "double",
+    "signed", "unsigned", "const", "volatile", "struct", "union", "enum",
+    "size_t", "ssize_t", "wchar_t", "va_list", "FILE", "bool", "_Bool",
+    "int8_t", "int16_t", "int32_t", "int64_t",
+    "uint8_t", "uint16_t", "uint32_t", "uint64_t", "intptr_t", "uintptr_t",
+}
+
+def unknown_types(f):
+    """Type names in f's signature that IPyEvalBase.h would not be able to name."""
+    names = set()
+    types = [p.type for p in f.parameters]
+    if f.return_type is not None:
+        types.append(f.return_type)
+    for t in types:
+        for tok in re.findall(r"[A-Za-z_][A-Za-z_0-9]*", gen_type(t)):
+            names.add(tok)
+    return names - declared_types - builtin_types
+
 def generate_base_if(out, functions):
     ind = ""
 
@@ -74,11 +106,21 @@ def generate_base_if(out, functions):
     out.write("#include <stdint.h>\n")
     out.write("#include <stdio.h>\n")
     out.write("#include <stdarg.h>\n")
+    out.write("\n")
+    # MSVC has no <sys/types.h> ssize_t. Python itself spells Py_ssize_t as
+    # SSIZE_T out of BaseTsd.h there, so do the same -- otherwise every
+    # declaration below that mentions Py_ssize_t is a syntax error, which is
+    # what the Windows leg hit the first time it was ever run.
+    out.write("#if defined(_MSC_VER)\n")
+    out.write("#include <BaseTsd.h>\n")
+    out.write("typedef SSIZE_T Py_ssize_t;\n")
+    out.write("#else\n")
     out.write("#include <sys/types.h>\n")
+    out.write("typedef ssize_t Py_ssize_t;\n")
+    out.write("#endif\n")
     out.write("\n")
     out.write("typedef struct _object PyObject;\n")
     out.write("typedef struct _typeobject PyTypeObject;\n")
-    out.write("typedef ssize_t Py_ssize_t;\n")
     out.write("typedef wchar_t Py_UNICODE;\n")
     out.write("\n")
     out.write("namespace pyapi {\n")
@@ -368,6 +410,7 @@ def main():
     print("Namespace: %s" % data.namespace.name)
 
     functions = []
+    skipped = []
     for f in data.namespace.functions:
         name = f.name.segments[0].name
         first_under = name.find("_")
@@ -377,10 +420,28 @@ def main():
         include &= not f.vararg
 
         if include:
+            unknown = unknown_types(f)
+            if unknown:
+                # Not an error. Which declarations pcpp can see out of Python.h
+                # varies with the platform as well as the version -- the same
+                # 3.13 emitted Py_CompileStringFlags under manylinux and macOS
+                # and did not under a local build -- so the set of nameable
+                # types is discovered here, not knowable when the exclude list
+                # above was written. Skipping keeps the generated header
+                # compilable; naming what was skipped keeps it from being
+                # silent.
+                skipped.append((name, sorted(unknown)))
+                include = False
+
+        if include:
 #            print("function: %s" % name)
             functions.append(f)
 
     functions.sort(key=lambda f: f.name.segments[0].name)
+
+    print("gen_py_if: %d functions" % len(functions))
+    for name, types in skipped:
+        print("gen_py_if: skipping %s -- undeclared type(s): %s" % (name, ", ".join(types)))
 
     if not os.path.isdir(args.outdir):
         os.makedirs(args.outdir)

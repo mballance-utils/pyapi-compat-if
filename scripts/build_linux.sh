@@ -16,8 +16,11 @@ else
     rm -f python/pyapi_compat_if/__build_num__.py
 fi
 
-yum install -y ninja-build
-
+# No `yum install ninja-build`. manylinux2014 is CentOS 7, whose aarch64 repos
+# are gone, so every manylinux2014_aarch64 leg died on "Not tolerating missing
+# names on install" before it compiled a line. The pip ninja installed below is
+# enough on its own: ivpm's build_ext prepends the interpreter's bin directory
+# to PATH for the cmake call, so cmake finds it. This is what debug-mgr does.
 ${IVPM_PYTHON} -m pip install ivpm cython setuptools --pre
 # -d default, explicitly: without it ivpm resolves default-dev on a source
 # checkout and drags the C++ test dependencies into the release build path.
