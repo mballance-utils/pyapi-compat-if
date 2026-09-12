@@ -278,6 +278,36 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1.13.0
       with:
         arch: x64
+
+    # TEMPORARY -- delete once the Windows leg is green. Reports whether
+    # windows.h defines INCREF/DECREF, which is the theory behind the
+    # WIN32_LEAN_AND_MEAN/#undef in src/Factory.cpp. If the build below is
+    # still red, this says in one line whether that theory was right, instead
+    # of costing another round of guessing. Never fails the job.
+    - name: Probe windows.h for macro collisions (diagnostic)
+      shell: bash
+      continue-on-error: true
+      run: |
+        probe() {
+          cat > probe.cpp <<EOF
+        $1
+        #include <windows.h>
+        #ifdef INCREF
+        #pragma message("PROBE[$2]: INCREF IS A MACRO")
+        #else
+        #pragma message("PROBE[$2]: INCREF is not a macro")
+        #endif
+        #ifdef DECREF
+        #pragma message("PROBE[$2]: DECREF IS A MACRO")
+        #else
+        #pragma message("PROBE[$2]: DECREF is not a macro")
+        #endif
+        EOF
+          cl -nologo -c -EHsc probe.cpp 2>&1 | grep PROBE || true
+        }
+        probe "" "plain"
+        probe "#define WIN32_LEAN_AND_MEAN" "lean"
+
     - name: Build/Test Package
       # bash rather than PowerShell, so the stamping logic is the one line of
       # shell it is everywhere else rather than a second dialect of it. The

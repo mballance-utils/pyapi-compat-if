@@ -23,7 +23,20 @@
 #include <unordered_set>
 #include <vector>
 #ifdef _WIN32
+// Keep windows.h's macro surface to a minimum before any project header is
+// pulled in below. IPyEval.h declares INCREF() and DECREF() as members, and a
+// macro of either name rewrites those declarations before the compiler sees
+// them -- MSVC then reads `virtual void (PyEvalObj *obj) = 0;`, reports
+// "missing ')' before '*'", and invents an `int PyEvalObj` member that poisons
+// every later use of the type. This is the only translation unit that includes
+// windows.h, and it is the only one that failed.
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+// Belt and braces: WIN32_LEAN_AND_MEAN excludes most of the offending headers,
+// but nothing here wants either name as a macro under any circumstances.
+#undef INCREF
+#undef DECREF
 #else
 #include <poll.h>
 #include <spawn.h>
@@ -38,6 +51,35 @@
 
 
 namespace pyapi {
+
+namespace {
+
+// Windows has no dlopen/dlsym, and these two calls are the whole of what this
+// file needs from the POSIX dynamic loader. The call sites below used them
+// unguarded -- the #ifdef _WIN32 further down covers find_python_lib and
+// get_python_info but never covered these -- so the library did not compile on
+// Windows at all, which is why the Windows CI leg was commented out rather
+// than merely failing.
+void *dll_open(const char *path) {
+#ifdef _WIN32
+    return reinterpret_cast<void *>(LoadLibraryA(path));
+#else
+    // Extension libraries don't explicitly link Python, so must be loaded
+    // with global symbols.
+    return dlopen(path, RTLD_LAZY|RTLD_GLOBAL);
+#endif
+}
+
+void *dll_sym(void *lib, const char *name) {
+#ifdef _WIN32
+    return reinterpret_cast<void *>(
+        GetProcAddress(reinterpret_cast<HMODULE>(lib), name));
+#else
+    return dlsym(lib, name);
+#endif
+}
+
+}
 
 
 Factory::Factory() : m_dmgr(0) {
@@ -85,9 +127,7 @@ IPyEval *Factory::getPyEval(std::string &err) {
                 return 0;
             }
             fprintf(stdout, "python_dll=%s\n", python_dll.c_str());
-            // Extension libraries don't explicitly link Python, 
-            // so must be loaded with global symbols
-            python_dll_lib = dlopen(python_dll.c_str(), RTLD_LAZY|RTLD_GLOBAL);
+            python_dll_lib = dll_open(python_dll.c_str());
         } else {
             // Have the library
         }
@@ -98,12 +138,12 @@ IPyEval *Factory::getPyEval(std::string &err) {
         }
 
         DEBUG_ENTER("Call Py_Initialize");
-        void *pyinit = dlsym(python_dll_lib, "Py_Initialize");
+        void *pyinit = dll_sym(python_dll_lib, "Py_Initialize");
         void (*pyinit_f)() = (void (*)())pyinit;
         void *(*pygetattr_f)(void *, const char *) = 
-            (void *(*)(void *, const char *))dlsym(python_dll_lib, "PyObject_GetAttrString");
+            (void *(*)(void *, const char *))dll_sym(python_dll_lib, "PyObject_GetAttrString");
         void *(*pycall_f)(void *, const char *, ...) =
-            (void *(*)(void *, const char *, ...))dlsym(python_dll_lib, "PyEval_CallFunction");
+            (void *(*)(void *, const char *, ...))dll_sym(python_dll_lib, "PyEval_CallFunction");
 
         if (!pyinit_f) {
             err = "Failed to load Py_Initialize";
@@ -114,7 +154,7 @@ IPyEval *Factory::getPyEval(std::string &err) {
         DEBUG_LEAVE("Call Py_Initialize");
 
         DEBUG_ENTER("Import pyapi package");
-        void *pyimport = dlsym(python_dll_lib, "PyImport_ImportModule");
+        void *pyimport = dll_sym(python_dll_lib, "PyImport_ImportModule");
         void *(*pyimport_f)(const char *) = (void *(*)(const char *))pyimport;
 
         if (!pyimport || !pyimport_f) {
