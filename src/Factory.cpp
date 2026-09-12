@@ -23,18 +23,20 @@
 #include <unordered_set>
 #include <vector>
 #ifdef _WIN32
-// Keep windows.h's macro surface to a minimum before any project header is
-// pulled in below. IPyEval.h declares INCREF() and DECREF() as members, and a
-// macro of either name rewrites those declarations before the compiler sees
-// them -- MSVC then reads `virtual void (PyEvalObj *obj) = 0;`, reports
-// "missing ')' before '*'", and invents an `int PyEvalObj` member that poisons
-// every later use of the type. This is the only translation unit that includes
-// windows.h, and it is the only one that failed.
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
-// Belt and braces: WIN32_LEAN_AND_MEAN excludes most of the offending headers,
-// but nothing here wants either name as a macro under any circumstances.
+// THE #undefs BELOW ARE LOAD-BEARING. windows.h defines INCREF and DECREF as
+// macros -- measured on the CI runner, and note it does so EVEN WITH
+// WIN32_LEAN_AND_MEAN, so the defines above do not save you. IPyEval.h
+// declares INCREF() and DECREF() members, and the macros rewrite those
+// declarations before the compiler sees them: MSVC ends up reading
+// `virtual void (PyEvalObj *obj) = 0;`, reports "missing ')' before '*'", then
+// invents an `int PyEvalObj` member that poisons every later use of the type.
+//
+// This is the only translation unit that includes windows.h and it was the
+// only one that failed. Renaming the two interface methods is the alternative
+// fix; that is a public API break over a name that belongs to windows.h.
 #undef INCREF
 #undef DECREF
 #else
