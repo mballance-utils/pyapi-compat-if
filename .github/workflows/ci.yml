@@ -1,158 +1,380 @@
+# mballance-utils/pyapi-compat-if -- GitHub Actions.
+#
+# COPY THIS AS A PAIR. Its counterpart is .forgejo/workflows/ci.yml. If
+# .forgejo/workflows/ is absent the Forgejo runner falls back to running THIS
+# FILE, under a runner that cannot build these wheels and was never set up to
+# publish them. Read that file before changing the shape of this one.
+#
+# Release authority for this repo is `github` -- see the gate job below. The
+# Forgejo side deliberately has no publish job.
+#
+# SHAPE: build -> artifact -> ONE publish job. Every platform leg uploads its
+# wheels and publishes nothing; a single `publish` job gathers them and makes
+# one upload. That is not tidiness. With a publish step inside each leg -- which
+# is what this file had until 2026-09-12 -- a release where Windows 3.12 fails
+# after the Linux legs have uploaded leaves a HALF-PUBLISHED version on PyPI,
+# and a PyPI filename can be yanked but never reused, so there is no way to
+# complete it. Gating one upload on all four build jobs makes the release
+# all-or-nothing.
+
 name: CI
+
 on:
   push:
+    branches: ['**']
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0/2'
 
 jobs:
-    gate:
-      # Release master switch. ONE file, above both platforms, decides who
-      # releases this repo:
-      #   https://dvkit.org/.well-known/release-authority.json
-      # Generated from sync-policy.toml by `git-sync emit-release-authority`, so
-      # GitHub and Forgejo cannot drift -- there is only one copy for them to
-      # disagree about. The runner only READS it, over plain HTTPS with no
-      # credential: a workflow file is public and editable by anyone who can push.
-      #
-      # `if:` on a job cannot reference a step in its own job, so the switch is
-      # resolved here and consumed through needs.gate.outputs.authority.
-      name: Release authority
-      runs-on: ubuntu-latest
-      outputs:
-        authority: ${{ steps.resolve.outputs.authority }}
-      steps:
-        - id: resolve
-          # One line on purpose: a multi-line `python3 -c` has to start at column
-          # 0, which terminates the YAML block scalar and silently corrupts the
-          # workflow.
-          run: |
-            url=https://dvkit.org/.well-known/release-authority.json
-            if ! body=$(curl -fsS --max-time 10 "$url"); then
-              # DECIDED 2026-08-30: fail CLOSED on a tag. A release blocked by a
-              # dvkit.org outage is recoverable; a release published twice from
-              # two forges is not. Quiet on a non-tag ref -- nothing was due.
-              case "$GITHUB_REF" in
-                refs/tags/v*)
-                  echo "::error::release-authority switch unreachable; refusing to publish"
-                  exit 1 ;;
-                *)
-                  echo "authority=none" >> "$GITHUB_OUTPUT"
-                  echo "switch unreachable on a non-tag ref; nothing to release"
-                  exit 0 ;;
-              esac
-            fi
-            auth=$(printf '%s' "$body" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); r=os.environ["GITHUB_REPOSITORY"]; print(d["repos"].get(r) or d["orgs"].get(r.split("/")[0]) or d["default"])')
-            echo "release authority for $GITHUB_REPOSITORY: $auth"
-            echo "authority=$auth" >> "$GITHUB_OUTPUT"
+  gate:
+    # Release master switch. ONE file, above both platforms, decides who
+    # releases this repo:
+    #   https://dvkit.org/.well-known/release-authority.json
+    # Generated from sync-policy.toml by `git-sync emit-release-authority`, so
+    # GitHub and Forgejo cannot drift -- there is only one copy for them to
+    # disagree about. The runner only READS it, over plain HTTPS with no
+    # credential: a workflow file is public and editable by anyone who can push.
+    #
+    # `if:` on a job cannot reference a step in its own job, so the switch is
+    # resolved here and consumed through needs.gate.outputs.authority.
+    name: Release authority
+    runs-on: ubuntu-latest
+    outputs:
+      authority: ${{ steps.resolve.outputs.authority }}
+    steps:
+      - id: resolve
+        # One line on purpose: a multi-line `python3 -c` has to start at column
+        # 0, which terminates the YAML block scalar and silently corrupts the
+        # workflow.
+        run: |
+          url=https://dvkit.org/.well-known/release-authority.json
+          if ! body=$(curl -fsS --max-time 10 "$url"); then
+            # DECIDED 2026-08-30: fail CLOSED on a tag. A release blocked by a
+            # dvkit.org outage is recoverable; a release published twice from
+            # two forges is not. Quiet on a non-tag ref -- nothing was due.
+            case "$GITHUB_REF" in
+              refs/tags/v*)
+                echo "::error::release-authority switch unreachable; refusing to publish"
+                exit 1 ;;
+              *)
+                echo "authority=none" >> "$GITHUB_OUTPUT"
+                echo "switch unreachable on a non-tag ref; nothing to release"
+                exit 0 ;;
+            esac
+          fi
+          auth=$(printf '%s' "$body" | python3 -c 'import json,os,sys; d=json.load(sys.stdin); r=os.environ["GITHUB_REPOSITORY"]; print(d["repos"].get(r) or d["orgs"].get(r.split("/")[0]) or d["default"])')
+          echo "release authority for $GITHUB_REPOSITORY: $auth"
+          echo "authority=$auth" >> "$GITHUB_OUTPUT"
 
-    linux:
-        needs: [gate]
-        runs-on: ubuntu-latest
-        strategy:
-          matrix:
-            spec: ['cp38-cp38', 'cp39-cp39', 'cp310-cp310', 'cp311-cp311', 'cp312-cp312']
-            image: [manylinux2014_x86_64, manylinux_2_28_x86_64, manylinux_2_34_x86_64]
-        steps:
-        - name: checkout
-          uses: actions/checkout@v4
-        - name: Build packages
-          env:
-            IVPM_PYTHON: /opt/python/${{ matrix.spec }}/bin/python
-            BUILD_NUM: ${{ github.run_id }}
-          run: >
-            docker run --rm
-            --volume "$(pwd):/io"
-            --env IVPM_PYTHON
-            --env BUILD_NUM
-            --workdir /io
-            quay.io/pypa/${{ matrix.image }}
-            /io/scripts/build_linux.sh
-        - name: Publish to PyPi
-          if: startsWith(github.ref, 'refs/tags/v') && needs.gate.outputs.authority == 'github'
-          env:
-            TWINE_USERNAME: __token__
-            TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          run: |
-            python3 -m pip install -U twine packaging
-            python3 -m twine upload wheelhouse/*.whl
+  tagcheck:
+    # Cheap, and it runs before any of the 40-odd build jobs, so a mistyped tag
+    # costs seconds rather than half an hour.
+    #
+    # REQUIRED, not optional. The tag alone determines the published version, so
+    # this is what stops v0.1.0 being tagged while setup.py still says 0.0.1 --
+    # which would publish under the wrong number, unfixably, because a PyPI
+    # version can be yanked but never reused. The publish job asserts the second
+    # half of the same property: that the built artifacts agree with the source
+    # they claim to come from.
+    name: Tag matches source version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check the tag IS the version
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*) ;;
+            *) echo "not a tag -- nothing to check"; exit 0 ;;
+          esac
+          tag="${GITHUB_REF#refs/tags/v}"
+          base=$(sed -n 's/^version="\(.*\)"$/\1/p' setup.py | head -1)
+          echo "tag=$tag  source=$base"
+          if [ -z "$base" ]; then
+            echo "::error::no top-level version=\"...\" in setup.py to check the tag against"
+            exit 1
+          fi
+          if [ "$tag" != "$base" ]; then
+            echo "::error::tag v$tag does not match version $base in setup.py"
+            exit 1
+          fi
+          echo "OK: tag and source version agree on $base"
 
-    macos:
-        needs: [gate]
-        runs-on: macos-latest
-        steps:
-        - uses: actions/checkout@v2
-        - name: Fetch dependencies
-          run: |
-            python3 --version
-            python3 -m venv py
-            ./py/bin/python3 -m pip install ivpm
-            ./py/bin/python3 -m ivpm update -a
-            ./packages/python/bin/python3 -m pip install cython setuptools wheel build twine
-        - name: Build wheel
-          env:
-            BUILD_NUM: ${{ github.run_id }}
-          run: |
-            echo "BUILD_NUM=${BUILD_NUM}" > python/pyapi_compat_if/__build_num__.py
-            ./packages/python/bin/python3 setup.py bdist_wheel
-        - name: Publish to PyPi
-          if: startsWith(github.ref, 'refs/tags/v') && needs.gate.outputs.authority == 'github'
-          env:
-            TWINE_USERNAME: __token__
-            TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          run: |
-            ./packages/python/bin/python3 -m twine  upload dist/*.whl
+  linux:
+    needs: [gate, tagcheck]
+    runs-on: 'ubuntu-latest'
+    strategy:
+      # One Python's failure must not cancel the other fourteen -- otherwise a
+      # single broken interpreter reads as "everything is broken" and the real
+      # blast radius is invisible. This defaulted to fail-fast until 2026-09-12,
+      # and the cp38 leg no manylinux image still carries was cancelling the
+      # whole matrix before anything else reported.
+      fail-fast: false
+      matrix:
+        # The manylinux images carry only the CPythons still supported upstream.
+        # cp38 and cp39 are gone from them, which is exactly how those legs
+        # failed: "/opt/python/cp38-cp38/bin/python: No such file or directory".
+        spec: ['cp310-cp310', 'cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
+        image: [manylinux2014_x86_64, manylinux_2_28_x86_64, manylinux_2_34_x86_64]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Compute the build stamp
+      id: stamp
+      run: |
+        case "$GITHUB_REF" in
+          refs/tags/v*)
+            echo "tag build -- leaving the version clean"
+            echo "build_num=" >> "$GITHUB_OUTPUT" ;;
+          *)
+            stamp="dev${GITHUB_RUN_ID}+gh.g$(git rev-parse --short=7 HEAD)"
+            echo "stamping .$stamp"
+            echo "build_num=$stamp" >> "$GITHUB_OUTPUT" ;;
+        esac
+    - name: Build packages
+      env:
+        IVPM_PYTHON: /opt/python/${{ matrix.spec }}/bin/python
+        BUILD_NUM: ${{ steps.stamp.outputs.build_num }}
+      run: >
+        docker run --rm
+        --volume "$(pwd):/io"
+        --env IVPM_PYTHON
+        --env BUILD_NUM
+        --workdir /io
+        quay.io/pypa/${{ matrix.image }}
+        /io/scripts/build_linux.sh
 
-#   windows:
-#     runs-on: ${{ matrix.platform }}
-#     strategy:
-#       matrix:
-#         include:
-#         - platform: windows-latest
-#           build_arch: x64
-#           python_arch: x64
-#           spec: '3.8'
-#         - platform: windows-latest
-#           build_arch: x64
-#           python_arch: x64
-#           spec: '3.9'
-#         - platform: windows-latest
-#           build_arch: x64
-#           python_arch: x64
-#           spec: '3.10'
-#         - platform: windows-latest
-#           build_arch: x64
-#           python_arch: x64
-#           spec: '3.11'
-#     steps:
-#     - name: checkout
-#       uses: actions/checkout@v2
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist-${{ matrix.image }}-${{ matrix.spec }}
+        path: wheelhouse/*.whl
+        if-no-files-found: error
 
-#     - name: Install python ${{ matrix.spec }}
-#       uses: actions/setup-python@v2
-#       with:
-#         architecture: ${{ matrix.python_arch }}
-#         python-version: ${{ matrix.spec }}
+  linux-aarch64:
+    needs: [gate, tagcheck]
+    runs-on: 'ubuntu-24.04-arm'
+    strategy:
+      fail-fast: false
+      matrix:
+        spec: ['cp310-cp310', 'cp311-cp311', 'cp312-cp312', 'cp313-cp313', 'cp314-cp314']
+        image: [manylinux2014_aarch64, manylinux_2_28_aarch64, manylinux_2_34_aarch64]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Compute the build stamp
+      id: stamp
+      run: |
+        case "$GITHUB_REF" in
+          refs/tags/v*)
+            echo "tag build -- leaving the version clean"
+            echo "build_num=" >> "$GITHUB_OUTPUT" ;;
+          *)
+            stamp="dev${GITHUB_RUN_ID}+gh.g$(git rev-parse --short=7 HEAD)"
+            echo "stamping .$stamp"
+            echo "build_num=$stamp" >> "$GITHUB_OUTPUT" ;;
+        esac
+    - name: Build packages
+      env:
+        IVPM_PYTHON: /opt/python/${{ matrix.spec }}/bin/python
+        BUILD_NUM: ${{ steps.stamp.outputs.build_num }}
+      run: >
+        docker run --rm
+        --volume "$(pwd):/io"
+        --env IVPM_PYTHON
+        --env BUILD_NUM
+        --workdir /io
+        quay.io/pypa/${{ matrix.image }}
+        /io/scripts/build_linux.sh
 
-#     - uses: ilammy/msvc-dev-cmd@v1.13.0
-#       with:
-#         arch: ${{ matrix.build_arch }}
-#     - name: Build/Test Package
-#       env:
-#         BUILD_NUM: ${{ github.run_id }}
-#       run: |
-#         python -m pip install ivpm
-#         python -m ivpm update -a
-#         ./packages/python/Scripts/python -m pip install ninja cython setuptools wheel build twine
-#         echo "BUILD_NUM=$env:BUILD_NUM" > python/pyapi_compat_if/__build_num__.py
-#         ./packages/python/Scripts/python setup.py build bdist_wheel
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist-${{ matrix.image }}-${{ matrix.spec }}
+        path: wheelhouse/*.whl
+        if-no-files-found: error
 
-#     - name: Publish to PyPi
-#       if: startsWith(github.ref, 'refs/heads/main')
-#       env:
-#         TWINE_USERNAME: __token__
-#         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-#       shell: bash
-#       run: |
-#           ./packages/python/Scripts/python -m twine upload dist/*.whl
+  macos:
+    needs: [gate, tagcheck]
+    runs-on: macos-latest
+    strategy:
+        fail-fast: false
+        matrix:
+          include:
+          - pyversion: '3.10'
+          - pyversion: '3.11'
+          - pyversion: '3.12'
+          - pyversion: '3.13'
+          - pyversion: '3.14'
+    steps:
+      - uses: actions/checkout@v6
+      # Pin the interpreter. Without this step the leg built against whatever
+      # python3 the image happened to ship -- 3.14 in September 2026 -- so this
+      # was one wheel, not a matrix.
+      - name: Install python ${{ matrix.pyversion }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.pyversion }}
+      - name: Fetch dependencies
+        run: |
+          python3 --version
+          python3 -m venv py
+          ./py/bin/python3 -m pip install ivpm
+          # -d default, explicitly: without it ivpm resolves default-dev on a
+          # source checkout, which pulls the C++ test dependencies into a build
+          # that does not use them. See ivpm.yaml.
+          ./py/bin/python3 -m ivpm update -a -d default --py-pip
+          ./packages/python/bin/python3 -m pip install cython setuptools wheel build twine
+      - name: Build wheel
+        env:
+          BUILD_NUM: ${{ github.run_id }}
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*)
+              echo "tag build -- leaving the version clean"
+              rm -f python/pyapi_compat_if/__build_num__.py ;;
+            *)
+              stamp="dev${BUILD_NUM}+gh.g$(git rev-parse --short=7 HEAD)"
+              echo "stamping .$stamp"
+              echo "BUILD_NUM=\"$stamp\"" > python/pyapi_compat_if/__build_num__.py ;;
+          esac
+          ./packages/python/bin/python3 setup.py bdist_wheel
+      - name: Smoke-test the wheel
+        # There is no Python test suite in this repo yet, so this is not the
+        # test step debug-mgr has. Importing the extension out of an INSTALLED
+        # wheel is still worth a step of its own: it is what catches a wheel
+        # that compiled but cannot resolve libpyapi-compat-if or libdebug-mgr at
+        # load time -- which a build-only leg reports as green.
+        run: |
+          ./packages/python/bin/python3 -m pip install dist/*.whl
+          ./packages/python/bin/python3 -c "import pyapi_compat_if, pyapi_compat_if.core as core; print('import OK:', core.__file__)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos-${{ matrix.pyversion }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  windows:
+    # Uncommented on 2026-09-12. This leg had been commented out wholesale, so
+    # "CI is green" said nothing whatsoever about Windows, and a release shipped
+    # no Windows wheels.
+    needs: [gate, tagcheck]
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pyversion: '3.10'
+          - pyversion: '3.11'
+          - pyversion: '3.12'
+          - pyversion: '3.13'
+          - pyversion: '3.14'
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6
+
+    - name: Install python ${{ matrix.pyversion }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.pyversion }}
+
+    - uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: x64
+    - name: Build/Test Package
+      # bash rather than PowerShell, so the stamping logic is the one line of
+      # shell it is everywhere else rather than a second dialect of it. The
+      # msvc-dev-cmd action exports its environment to the whole job, so the
+      # compiler is found either way.
+      shell: bash
+      env:
+        BUILD_NUM: ${{ github.run_id }}
+      run: |
+        python -m pip install ivpm
+        # -d default, explicitly -- see ivpm.yaml.
+        python -m ivpm update -a -d default --py-pip
+        ./packages/python/Scripts/python -m pip install ninja cython setuptools wheel build twine
+        case "$GITHUB_REF" in
+          refs/tags/v*)
+            echo "tag build -- leaving the version clean"
+            rm -f python/pyapi_compat_if/__build_num__.py ;;
+          *)
+            stamp="dev${BUILD_NUM}+gh.g$(git rev-parse --short=7 HEAD)"
+            echo "stamping .$stamp"
+            echo "BUILD_NUM=\"$stamp\"" > python/pyapi_compat_if/__build_num__.py ;;
+        esac
+        ./packages/python/Scripts/python setup.py build bdist_wheel
+
+    - name: Smoke-test the wheel
+      shell: bash
+      run: |
+        ./packages/python/Scripts/python -m pip install dist/*.whl
+        ./packages/python/Scripts/python -c "import pyapi_compat_if, pyapi_compat_if.core as core; print('import OK:', core.__file__)"
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist-windows-${{ matrix.pyversion }}
+        path: dist/*.whl
+        if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    # Three conditions, and all of them matter:
+    #   * a TAG -- a push to a branch never releases anything. This is what
+    #     makes the 5-minute Forgejo sync safe: mirroring your work cannot ship
+    #     it.
+    #   * the switch names THIS forge.
+    #   * every build job succeeded -- `needs:` supplies this one. A partial
+    #     matrix must not become a partial release.
+    #
+    # SKIPS -- does not fail -- when the switch names the other side. A red
+    # build on the dormant side every time anyone tags would train people to
+    # ignore the signal, which is worse than no signal.
+    if: startsWith(github.ref, 'refs/tags/v') && needs.gate.outputs.authority == 'github'
+    needs: [gate, tagcheck, linux, linux-aarch64, macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          merge-multiple: true
+          path: dist
+
+      - name: Check every artifact IS the tagged version
+        # The other half of the tagcheck job: that job proved the SOURCE agrees
+        # with the tag, this one proves the BUILT WHEELS agree with the source.
+        # A leg that somehow built from a stale version file passes the first
+        # and fails here.
+        run: |
+          base="${GITHUB_REF#refs/tags/v}"
+          ls -la dist/
+          n=0
+          for f in dist/*.whl; do
+            case "$(basename "$f")" in
+              pyapi_compat_if-${base}-*.whl) n=$((n+1)) ;;
+              *) echo "::error::artifact $(basename "$f") is not version ${base}"; exit 1 ;;
+            esac
+          done
+          if [ "$n" -eq 0 ]; then
+            echo "::error::no wheels were gathered; refusing to publish an empty release"
+            exit 1
+          fi
+          echo "OK: $n wheel(s), all version ${base}"
+
+      - name: Publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo "::error::PYPI_API_TOKEN is not visible to this repository"
+            exit 1
+          fi
+          python3 -m pip install -U twine packaging
+          python3 -m twine check dist/*.whl
+          # Idempotence net: one switch, two possible publishers, and a re-run
+          # of this job after a partial network failure -- a double-fire has to
+          # be a no-op rather than an error.
+          python3 -m twine upload --non-interactive --skip-existing dist/*.whl
+          echo "published $(ls dist/*.whl | wc -l) wheel(s)"

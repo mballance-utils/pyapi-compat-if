@@ -68,11 +68,17 @@ setup_args = dict(
   install_requires=[
       'debug-mgr'
   ],
+  # vcs_versioning is not optional alongside setuptools_scm. From 10.x,
+  # setuptools_scm imports it at module scope; setup_requires resolves through
+  # easy_install, which does not follow that dependency, so every macOS leg died
+  # in .eggs with "ModuleNotFoundError: No module named 'vcs_versioning'".
+  # Naming it here is the same fix debug-mgr carries.
   setup_requires=[
     'cython',
     'debug-mgr',
     'ivpm',
     'setuptools_scm',
+    'vcs_versioning',
   ],
   entry_points={
     "ivpm.pkginfo": [

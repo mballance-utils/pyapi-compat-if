@@ -8,6 +8,15 @@ package:
 #     - ninja
 
   dep-sets:
+  # The set ivpm picks by default on a source checkout, so this is the one a
+  # developer gets. gtest is here and only here: it belongs to the C++ unit
+  # tests under test/, which CMakeLists.txt only adds when ENABLE_TESTING is
+  # set -- and that happens only when PACKAGES_DIR is unset, i.e. never in the
+  # wheel build, because ivpm's build_ext always passes -DPACKAGES_DIR. It must
+  # NOT come back into `default`: ivpm extracts .tar.gz packages with
+  # TarFile.extract(filter='data'), and `filter` did not exist before Python
+  # 3.10.12, while actions/setup-python's macOS and Windows 3.10 is pinned at
+  # 3.10.11. Fetching it is what makes every 3.10 CI leg red.
   - name: default-dev
     deps:
     - name: cython
@@ -23,17 +32,19 @@ package:
     - name: cxxheaderparser
       src: pypi
 
+  # What CI builds against -- it asks for this set by name, `ivpm update -d
+  # default`. Without -d, ivpm resolves default-dev on a source checkout, which
+  # is how the gtest tarball would end up in the release build path. Keep this
+  # set to what a wheel build actually needs.
   - name: default
     deps:
     - name: cython
       src: pypi
-    - name: gtest
-      url: https://github.com/google/googletest/archive/refs/tags/release-1.11.0.tar.gz
+    - name: ninja
+      src: pypi
     - name: debug-mgr
       url: https://github.com/mballance/debug-mgr.git
     - name: pcpp
       src: pypi
     - name: cxxheaderparser
       src: pypi
-       
-
